@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CodeRefine — AI Code Review Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/go/go.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/rust/rust.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/ruby/ruby.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/shell/shell.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Animated background -->
+  <div class="bg-grid"></div>
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">⬡</span>
+        <span class="logo-text">Code<span class="logo-accent">Refine</span></span>
+        <span class="logo-badge">AI</span>
+      </div>
+      <nav class="header-nav">
+        <button class="nav-btn active" data-tab="editor">Editor</button>
+      </nav>
+      <div class="header-status">
+        <span class="status-dot"></span>
+        <span class="status-text">OpenRouter Ready</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main App -->
+  <main class="main">
+
+    <!-- ===== EDITOR TAB ===== -->
+    <div class="tab-panel active" id="tab-editor">
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="select-wrap">
+            <select id="language-select" class="select">
+              <option value="python">Python</option>
+              <option value="javascript">JavaScript</option>
+              <option value="typescript">TypeScript</option>
+              <option value="java">Java</option>
+              <option value="cpp">C++</option>
+              <option value="c">C</option>
+              <option value="csharp">C#</option>
+              <option value="go">Go</option>
+              <option value="rust">Rust</option>
+              <option value="php">PHP</option>
+              <option value="ruby">Ruby</option>
+              <option value="sql">SQL</option>
+              <option value="bash">Bash</option>
+              <option value="html">HTML</option>
+              <option value="css">CSS</option>
+            </select>
+          </div>
+          <div class="select-wrap">
+            <select id="model-select" class="select">
+              <option value="deepseek/deepseek-coder">DeepSeek Coder</option>
+              <option value="meta-llama/llama-3.1-70b-instruct">LLaMA 3.1 70B</option>
+              <option value="qwen/qwen-2.5-coder-32b-instruct">Qwen 2.5 Coder</option>
+              <option value="mistralai/codestral-mamba">Codestral Mamba</option>
+              <option value="anthropic/claude-3-haiku">Claude 3 Haiku</option>
+            </select>
+          </div>
+          <button class="btn-ghost" id="btn-load-sample">Load Sample</button>
+          <button class="btn-ghost" id="btn-clear">Clear</button>
+        </div>
+        <div class="toolbar-right">
+          <div id="char-count" class="char-count">0 chars</div>
+          <button class="btn-primary" id="btn-analyze">
+            <span class="btn-icon">◈</span>
+            <span>Analyze Code</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Split layout -->
+      <div class="split-layout">
+        <!-- Left: Editor -->
+        <div class="editor-panel">
+          <div class="panel-header">
+            <span class="panel-title">Source Code</span>
+            <div class="panel-actions">
+              <button class="icon-btn" id="btn-copy-code" title="Copy code">⎘</button>
+            </div>
+          </div>
+          <div class="editor-wrap">
+            <textarea id="code-editor"></textarea>
+          </div>
+        </div>
+
+        <!-- Right: Results -->
+        <div class="results-panel" id="results-panel">
+          <!-- Idle state -->
+          <div class="idle-state" id="idle-state">
+            <div class="idle-icon">◈</div>
+            <h3 class="idle-title">Ready to Analyze</h3>
+            <p class="idle-text">Paste your code in the editor and click <strong>Analyze Code</strong> to get AI-powered review with bug detection, performance insights, security checks, and best practice recommendations.</p>
+            <div class="idle-features">
+              <div class="idle-feature">🐛 Bug Detection</div>
+              <div class="idle-feature">⚡ Performance</div>
+              <div class="idle-feature">🔒 Security</div>
+              <div class="idle-feature">📐 Best Practices</div>
+            </div>
+          </div>
+
+          <!-- Loading state -->
+          <div class="loading-state hidden" id="loading-state">
+            <div class="loader-ring">
+              <div></div><div></div><div></div><div></div>
+            </div>
+            <div class="loading-text">Analyzing your code...</div>
+            <div class="loading-sub" id="loading-sub">Connecting to AI model</div>
+          </div>
+
+          <!-- Results content -->
+          <div class="results-content hidden" id="results-content">
+            <!-- Score card -->
+            <div class="score-card">
+              <div class="score-circle-wrap">
+                <svg class="score-ring" viewBox="0 0 120 120">
+                  <circle class="score-ring-bg" cx="60" cy="60" r="52"/>
+                  <circle class="score-ring-fill" id="score-ring-fill" cx="60" cy="60" r="52"/>
+                </svg>
+                <div class="score-number" id="score-number">—</div>
+              </div>
+              <div class="score-info">
+                <div class="score-grade" id="score-grade">—</div>
+                <div class="score-summary" id="score-summary"></div>
+                <div class="score-stats" id="score-stats"></div>
+              </div>
+            </div>
+
+            <!-- Metrics bar -->
+            <div class="metrics-bar" id="metrics-bar"></div>
+
+            <!-- Issue tabs -->
+            <div class="issue-tabs">
+              <button class="issue-tab active" data-issues="bugs">
+                <span class="tab-icon">🐛</span> Bugs <span class="tab-count" id="count-bugs">0</span>
+              </button>
+              <button class="issue-tab" data-issues="security">
+                <span class="tab-icon">🔒</span> Security <span class="tab-count" id="count-security">0</span>
+              </button>
+              <button class="issue-tab" data-issues="performance">
+                <span class="tab-icon">⚡</span> Performance <span class="tab-count" id="count-performance">0</span>
+              </button>
+              <button class="issue-tab" data-issues="bestPractices">
+                <span class="tab-icon">📐</span> Best Practices <span class="tab-count" id="count-best">0</span>
+              </button>
+              <button class="issue-tab" data-issues="positives">
+                <span class="tab-icon">✅</span> Positives <span class="tab-count" id="count-positives">0</span>
+              </button>
+            </div>
+
+            <!-- Issues list -->
+            <div class="issues-list" id="issues-list"></div>
+
+            <!-- Rewrite button -->
+            <div class="rewrite-section">
+              <button class="btn-rewrite" id="btn-rewrite">
+                <span>✨ Generate Optimized Code</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Optimized code panel (shown after rewrite) -->
+      <div class="optimized-panel hidden" id="optimized-panel">
+        <div class="panel-header">
+          <span class="panel-title">✨ Optimized Code</span>
+          <div class="panel-actions">
+            <button class="icon-btn" id="btn-copy-optimized" title="Copy optimized code">⎘ Copy</button>
+            <button class="icon-btn" id="btn-use-optimized" title="Use as new input">↑ Use as Input</button>
+            <button class="icon-btn" id="btn-close-optimized" title="Close">✕</button>
+          </div>
+        </div>
+        <div class="changes-summary" id="changes-summary"></div>
+        <div class="editor-wrap">
+          <textarea id="optimized-editor"></textarea>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== HISTORY TAB ===== -->
+    <div class="tab-panel hidden" id="tab-history">
+      <div class="history-header">
+        <h2 class="section-title">Analysis History</h2>
+        <button class="btn-ghost" id="btn-clear-history">Clear All</button>
+      </div>
+      <div class="history-list" id="history-list">
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <p>No analyses yet. Run your first code review!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== DOCS TAB ===== -->
+    <div class="tab-panel hidden" id="tab-docs">
+      <div class="docs-container">
+        <h2 class="section-title">API Documentation</h2>
+        <p class="docs-intro">CodeRefine exposes a REST API you can integrate into any CI/CD pipeline or IDE extension.</p>
+
+        <div class="api-endpoint">
+          <div class="endpoint-header">
+            <span class="method-badge post">POST</span>
+            <code class="endpoint-path">/api/analyze</code>
+          </div>
+          <p class="endpoint-desc">Analyze code for bugs, performance issues, security vulnerabilities, and best practices.</p>
+          <div class="code-block"><pre>{
+  "code": "string (required)",
+  "language": "python | javascript | java | ...",
+  "model": "deepseek/deepseek-coder (optional)"
+}</pre></div>
+          <div class="endpoint-header" style="margin-top:12px">
+            <span class="method-badge get">Headers</span>
+          </div>
+          <div class="code-block"><pre>X-Session-Id: your-session-uuid</pre></div>
+        </div>
+
+        <div class="api-endpoint">
+          <div class="endpoint-header">
+            <span class="method-badge post">POST</span>
+            <code class="endpoint-path">/api/rewrite</code>
+          </div>
+          <p class="endpoint-desc">Generate optimized, production-ready version of your code.</p>
+          <div class="code-block"><pre>{
+  "code": "string (required)",
+  "language": "string (required)",
+  "issues": [{ "title": "...", "description": "..." }],
+  "model": "string (optional)"
+}</pre></div>
+        </div>
+
+        <div class="api-endpoint">
+          <div class="endpoint-header">
+            <span class="method-badge get">GET</span>
+            <code class="endpoint-path">/api/history</code>
+          </div>
+          <p class="endpoint-desc">Get analysis history for current session.</p>
+          <div class="code-block"><pre>Header: X-Session-Id: your-session-uuid</pre></div>
+        </div>
+
+        <div class="api-endpoint">
+          <div class="endpoint-header">
+            <span class="method-badge get">GET</span>
+            <code class="endpoint-path">/api/health</code>
+          </div>
+          <p class="endpoint-desc">Check API health and available AI models.</p>
+        </div>
+
+        <div class="supported-langs">
+          <h3 class="lang-title">Supported Languages</h3>
+          <div class="lang-grid">
+            <span class="lang-tag">Python</span><span class="lang-tag">JavaScript</span>
+            <span class="lang-tag">TypeScript</span><span class="lang-tag">Java</span>
+            <span class="lang-tag">C++</span><span class="lang-tag">C</span>
+            <span class="lang-tag">C#</span><span class="lang-tag">Go</span>
+            <span class="lang-tag">Rust</span><span class="lang-tag">PHP</span>
+            <span class="lang-tag">Ruby</span><span class="lang-tag">SQL</span>
+            <span class="lang-tag">Bash</span><span class="lang-tag">HTML</span>
+            <span class="lang-tag">CSS</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Toast notifications -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
